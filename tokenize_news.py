@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import os
 import operator
+import argparse
 
 import json
 import numpy as np
 import nltk
-from nltk.corpus import reuters
 
 import util
 
@@ -14,21 +14,22 @@ import util
 Required input data:
 ./input/stopWords
 ./input/stockReturns.json
-./input/news_reuters.csv
+./input/news/*/*
 
 Output file name: 
 input/featureMatrix_train
-input/featureMatrix_test """
+input/featureMatrix_test 
+input/word2idx"""
 
 # credit: https://github.com/lazyprogrammer/machine_learning_examples/tree/master/nlp_class2
 
-def tokenize(news_file, price_file, stopWords_file, output, sentense_len, term_type, n_vocab, mtype):
+def tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, sen_len, term_type, n_vocab, mtype):
     # load price data
     with open(price_file) as file:
         print("Loading price info ...")
         priceDt = json.load(file)[term_type]
 
-    testDates = util.dateGenerator(1) # the most recent days are used for testing
+    testDates = util.dateGenerator(7) # the most recent days are used for testing
     os.system('rm ' + output + mtype)
 
     # load stop words
@@ -43,6 +44,7 @@ def tokenize(news_file, price_file, stopWords_file, output, sentense_len, term_t
     current_idx = 2
     word_idx_count = {0: float('inf'), 1: float('inf')}
     sentences, labels = [], []
+    os.system('cat ./input/news/*/* > ./input/news_reuters.csv')
     with open(news_file) as f:
         for num, line in enumerate(f):
             line = line.strip().split(',')
@@ -65,13 +67,9 @@ def tokenize(news_file, price_file, stopWords_file, output, sentense_len, term_t
             if mtype == "train" and day in testDates: 
                 continue
 
-            tokens = nltk.word_tokenize(headline) + nltk.word_tokenize(body)
-            tokens = list(map(util.unify_word, tokens))
-            tokens = list(map(util.unify_word, tokens))
+            tokens = util.tokenize_news(headline, stopWords)
 
             for t in tokens:
-                if t in stopWords:
-                    continue
                 if t not in word2idx:
                     word2idx[t] = current_idx
                     idx2word.append(t)
@@ -93,6 +91,7 @@ def tokenize(news_file, price_file, stopWords_file, output, sentense_len, term_t
         word2idx_small[word] = new_idx
         idx_new_idx_map[idx] = new_idx
         new_idx += 1
+
     # let 'unknown' be the last token
     word2idx_small['UNKNOWN'] = new_idx 
     unknown = new_idx
@@ -103,15 +102,19 @@ def tokenize(news_file, price_file, stopWords_file, output, sentense_len, term_t
         if len(sentence) > 1:
             new_sentence = [idx_new_idx_map[idx] if idx in idx_new_idx_map else unknown for idx in sentence]
             # padding
-            if len(new_sentence) > sentense_len:
-                new_sentence = new_sentence[:sentense_len]
+            if len(new_sentence) > sen_len:
+                new_sentence = new_sentence[:sen_len]
             else:
-                new_sentence = new_sentence + [1] * (sentense_len - len(new_sentence))
+                new_sentence = new_sentence + [1] * (sen_len - len(new_sentence))
             new_sentence.append(labels[num])
             features.append(new_sentence)
 
     features = np.matrix(features)
     print(features.shape)
+
+
+    with open(output_wd2idx, 'w') as fp:
+        json.dump(word2idx_small, fp)
 
     with open(output + mtype, 'a+') as file:
         np.savetxt(file, features, fmt="%s")
@@ -120,14 +123,19 @@ def main():
     news_file = "./input/news_reuters.csv"
     stopWords_file = "./input/stopWords"
     price_file = "./input/stockReturns.json"
-    output = './input/featureMatrix_'
 
-    n_vocab = 10000
-    sentense_len = 30
-    # you can choose short mid long
-    term_type = 'short'
-    tokenize(news_file, price_file, stopWords_file, output, sentense_len, term_type, n_vocab, 'train')
-    tokenize(news_file, price_file, stopWords_file, output, sentense_len, term_type, n_vocab, 'test')
+    
+    output = './input/featureMatrix_'
+    output_wd2idx = "./input/word2idx"
+
+    parser = argparse.ArgumentParser(description='Tokenize Reuters news')
+    parser.add_argument('-vocabs', type=int, default=30000, help='total number of vocabularies [default: 1000]')
+    parser.add_argument('-words', type=int, default=20, help='max number of words in a sentence [default: 20]')
+    parser.add_argument('-term', type=str, default='short', help='return type [short mid long] [default: short]')
+    args = parser.parse_args()
+
+    tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, args.words, args.term, args.vocabs, 'train')
+    tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, args.words, args.term, args.vocabs, 'test')
 
 
 if __name__ == "__main__":

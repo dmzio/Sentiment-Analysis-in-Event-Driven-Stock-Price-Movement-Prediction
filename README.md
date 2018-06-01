@@ -1,7 +1,7 @@
 # Sentiment Analysis for Event-Driven Stock Prediction
-Use natural-language processing (NLP) to predict stock price movement based on Reuters News, we need the following 5 steps:
+Use natural-language processing (NLP) to predict stock price movement based on Reuters News, we need the following four steps:
 
-1. Data Collection
+1. Data Collection and Preprocessing
 
     1.1 get the whole ticker list to obtain the details about public companies
 
@@ -9,13 +9,13 @@ Use natural-language processing (NLP) to predict stock price movement based on R
     
     1.3 crawl prices using urllib2 (Yahoo Finance API is outdated)
 
-2. Apply GloVe to train a dense word vector from Reuters corpus in NLTK (optional, PyTorch can handle it directly)
+    1.4. Apply GloVe to train a dense word vector from Reuters corpus in NLTK (optional, PyTorch can handle it directly)
 
-    2.1 build the word-word co-occurrence matrix
+        1.4.1 build the word-word co-occurrence matrix
   
-    2.2 factorizing the weighted log of the co-occurrence matrix
+        1.4.2 factorizing the weighted log of the co-occurrence matrix
   
-3. Feature Engineering
+2. Feature Engineering (Tokenization)
   
     3.2 Unify word format: unify tense, singular & plural, remove punctuations & stop words
   
@@ -23,8 +23,8 @@ Use natural-language processing (NLP) to predict stock price movement based on R
   
     3.3 Pad word senquence (essentially a matrix) to keep the same dimension
   
-4. Train a ConvNet to predict the stock price movement based on a reasonable parameter selection
-5. The result shows a significant 1-2% improve on the test set
+3. Train a Bayesian Convolutional Neural Network using Stochastic Gradient Langevin Dynamics
+4. Use thinning models to predict future news
 
 ## Requirement
 * Python 3
@@ -71,47 +71,46 @@ $ ./crawler/yahoo_finance.py # generate raw data: stockPrices_raw.json, containi
 $ ./create_label.py # use raw price data to generate stockReturns.json
 ```
 
-### 2. Word Embedding
-
-To use our customized word vector, apply GloVe to train word vector from Reuters corpus in NLTK
-
-```bash
-$ ./word_embedding.py
-```
-
-Read the detail of the method [here](http://www-nlp.stanford.edu/pubs/glove.pdf), implementation [here](https://github.com/lazyprogrammer/machine_learning_examples/blob/master/nlp_class2/glove.py)
-
-We can also directly use a pretrained GloVe word vector from [here](http://nlp.stanford.edu/projects/glove/)
-
-### 3. Feature Engineering
+### 2. Feature Engineering (Tokenization)
 
 Unify the word format, project word to a word vector, so every sentence results in a matrix.
 
-Detail about unifying word format are: lower case, remove punctuation, get rid of stop words, unify tense and singular & plural using [en](https://www.nodebox.net/code/index.php/Linguistics#verb_conjugation)
+Detail about unifying word format are: lower case, remove punctuation, get rid of stop words, unify tense and singular & plural.
 
 Seperate test set away from training+validation test, otherwise we would get a too optimistic result.
 
 ```bash
-$ ./feature_matrix.py
+$ ./tokenize_news.py
 ```
 
-### 4. Train a ConvNet to predict the stock price movement. 
+### 3. Train a ConvNet to predict the stock price movement. 
 
-For the sake of simplicity, I just applied a ConvoNet in [Keras](http://machinelearningmastery.com/handwritten-digit-recognition-using-convolutional-neural-networks-python-keras/), the detail operations in text data is slighly differnt from the image, we can use the architecture from [FIgure 1 in Yoon Kim's paper](http://www.aclweb.org/anthology/D14-1181)
+Type the following to train a set of robust Bayesian models.
+```bash
+$ ./main.py -epochs 500 -static False
+```
+
+Test the performance on the most recent news in two weeks.
+```bash
+$ ./main.py -eval True
+>>> Testing    - loss: 67.6102  acc: 58.07%(41.8/72) 83.50%(3/3) 100.00%(0/0) 0.00%(0/0) 0.00%(0/0)
+```
+Note: the predictions are averaged (therefore some numbers, like 41.8, are rounded). From left to right, the predictions are more and more confident.
+
+### 4. Prediction and analysis
 
 ```bash
-$ ./model_cnn.py
+$ ./main.py -predict "Top executive behind Baidu's artificial intelligence drive steps aside"
+>>> Sell
 ```
 
-### 5. Prediction and analysis
-
-As shown in the result, the prediction accuracy signifinantly improves around 1% - 2% compared to random pick.
-
-### 6. Future work
+### 5. Future work
 
 From the [work](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1331573) by Tim Loughran and Bill McDonald, some words have strong indication of positive and negative effects in finance, we may need to dig into these words to find more information. A very simple but interest example can be found in [Financial Sentiment Analysis part1](http://francescopochetti.com/scrapying-around-web/), [part2](http://francescopochetti.com/financial-blogs-sentiment-analysis-part-crawling-web/)
 
-As suggested by H Lee, we may consider to include features of earnings surprise due to its great value
+As suggested by H Lee, we may consider to include features of earnings surprise due to its great value.
+
+You are welcome to send a better stopword list.
 
 
 ## Issues
@@ -121,12 +120,13 @@ As suggested by H Lee, we may consider to include features of earnings surprise 
 
 1. Yoon Kim, [Convolutional Neural Networks for Sentence Classification](http://www.aclweb.org/anthology/D14-1181), EMNLP, 2014
 2. J Pennington, R Socher, CD Manning, [GloVe: Global Vectors for Word Representation](http://www-nlp.stanford.edu/pubs/glove.pdf), EMNLP, 2014
-3. Tim Loughran and Bill McDonald, 2011, “When is a Liability not a Liability?  Textual Analysis, Dictionaries, and 10-Ks,” Journal of Finance, 66:1, 35-65.
-4. H Lee, etc, [On the Importance of Text Analysis for Stock Price Prediction](http://nlp.stanford.edu/pubs/lrec2014-stock.pdf), LREC, 2014
-5. Xiao Ding, [Deep Learning for Event-Driven Stock Prediction](http://ijcai.org/Proceedings/15/Papers/329.pdf), IJCAI2015
-6. [IMPLEMENTING A CNN FOR TEXT CLASSIFICATION IN TENSORFLOW](http://www.wildml.com/2015/12/implementing-a-cnn-for-text-classification-in-tensorflow/)
-7. [Keras predict sentiment-movie-reviews using deep learning](http://machinelearningmastery.com/predict-sentiment-movie-reviews-using-deep-learning/)
-8. [Keras sequence-classification-lstm-recurrent-neural-networks](http://machinelearningmastery.com/sequence-classification-lstm-recurrent-neural-networks-python-keras/)
-9. [tf-idf + t-sne](https://github.com/lazyprogrammer/machine_learning_examples/blob/master/nlp_class2/tfidf_tsne.py)
-10. [Implementation of CNN in sequence classification](https://github.com/dennybritz/cnn-text-classification-tf)
-11. [Getting Started with Word2Vec and GloVe in Python](http://textminingonline.com/getting-started-with-word2vec-and-glove-in-python)
+3. Max Welling, Yee Whye Teh, [Bayesian Learning via Stochastic Gradient Langevin Dynamics](https://pdfs.semanticscholar.org/aeed/631d6a84100b5e9a021ec1914095c66de415.pdf), ICML, 2011
+4. Tim Loughran and Bill McDonald, 2011, “When is a Liability not a Liability?  Textual Analysis, Dictionaries, and 10-Ks,” Journal of Finance, 66:1, 35-65.
+5. H Lee, etc, [On the Importance of Text Analysis for Stock Price Prediction](http://nlp.stanford.edu/pubs/lrec2014-stock.pdf), LREC, 2014
+6. Xiao Ding, [Deep Learning for Event-Driven Stock Prediction](http://ijcai.org/Proceedings/15/Papers/329.pdf), IJCAI2015
+7. [IMPLEMENTING A CNN FOR TEXT CLASSIFICATION IN TENSORFLOW](http://www.wildml.com/2015/12/implementing-a-cnn-for-text-classification-in-tensorflow/)
+8. [Keras predict sentiment-movie-reviews using deep learning](http://machinelearningmastery.com/predict-sentiment-movie-reviews-using-deep-learning/)
+9. [Keras sequence-classification-lstm-recurrent-neural-networks](http://machinelearningmastery.com/sequence-classification-lstm-recurrent-neural-networks-python-keras/)
+10. [tf-idf + t-sne](https://github.com/lazyprogrammer/machine_learning_examples/blob/master/nlp_class2/tfidf_tsne.py)
+11. [Implementation of CNN in sequence classification](https://github.com/dennybritz/cnn-text-classification-tf)
+12. [Getting Started with Word2Vec and GloVe in Python](http://textminingonline.com/getting-started-with-word2vec-and-glove-in-python)
