@@ -1,29 +1,23 @@
 # Sentiment Analysis for Event-Driven Stock Prediction
-Use natural-language processing (NLP) to predict stock price movement based on Reuters News, we need the following four steps:
+Use natural-language processing (NLP) to predict stock price movement based on Reuters News
 
 1. Data Collection and Preprocessing
 
-    1.1 get the whole ticker list to obtain the details about public companies
+    1.1 get the whole ticker list to obtain the details of public companies
 
     1.2 crawl news from Reuters using BeautifulSoup
     
-    1.3 crawl prices using urllib2 (Yahoo Finance API is outdated)
+    1.3 crawl prices using urllib
 
-    1.4. Apply GloVe to train a dense word vector from Reuters corpus in NLTK (optional, PyTorch can handle it directly)
-
-        1.4.1 build the word-word co-occurrence matrix
-  
-        1.4.2 factorizing the weighted log of the co-occurrence matrix
-  
 2. Feature Engineering (Tokenization)
   
-    3.2 Unify word format: unify tense, singular & plural, remove punctuations & stop words
+    2.1 Unify word format: unify tense, singular & plural, remove punctuations & stop words
   
-    3.2 Extract feature using feature hashing based on the trained word vector (step 2)
+    2.2 Implement one-hot encoding
   
-    3.3 Pad word senquence (essentially a matrix) to keep the same dimension
+    2.3 Pad word senquence (essentially a matrix) to keep the same dimension
   
-3. Train a Bayesian Convolutional Neural Network using Stochastic Gradient Langevin Dynamics
+3. Train a set of Bayesian Convolutional Neural Networks using Stochastic Gradient Langevin Dynamics to obtain more robustness
 4. Use thinning models to predict future news
 
 ## Requirement
@@ -35,7 +29,9 @@ Use natural-language processing (NLP) to predict stock price movement based on R
 
 ## Usage
 
-### 1. Data Collection
+Note: If you don't want to take time to crawl data and train the model, you can also directly go to step 4.
+
+### 1. Data collection
 
 
 #### 1.1 Download the ticker list from [NASDAQ](http://www.nasdaq.com/screening/companies-by-industry.aspx)
@@ -48,7 +44,7 @@ $ ./crawler/all_tickers.py 20  # keep the top e.g. 20% marketcap companies
 
 *Note: you may need over one month to fetch the news you want.*
 
-Suppose we find a piece of news about COO Qi Lu Resignation on May.18, 2018 at reuters.com
+Suppose we find a piece of news about COO Lu Qi Resignation on May.18, 2018 at reuters.com
 
 ![](./imgs/baidu.PNG)
 
@@ -60,49 +56,80 @@ $ ./crawler/reuters.py # we can relate the news with company and date, this is m
 
 ![](./imgs/111.png)
 
-By brute-force iterating company tickers and dates, we can get the dataset with about 30,000 ~ 200,000 news in the end. Since a company may have multiple news in a single day, the current version will only deal with topStory and ignore the others.
+By brute-force iterating company tickers and dates, we can get the dataset with roughly 400,000 news in the end. Since a company may have multiple news in a single day, the current version will only use topStory news to train our models and ignore the others.
 
 #### 1.3 Use urllib to crawl historical stock prices
  
-Improvement here, use normalized return [4] over S&P 500 instead of return.
+Improvement here, use normalized return [5] over S&P 500 instead of return.
 
 ```bash
 $ ./crawler/yahoo_finance.py # generate raw data: stockPrices_raw.json, containing open, close, ..., adjClose
 $ ./create_label.py # use raw price data to generate stockReturns.json
 ```
 
-### 2. Feature Engineering (Tokenization)
+### 2. Feature engineering (Tokenization)
 
 Unify the word format, project word to a word vector, so every sentence results in a matrix.
 
 Detail about unifying word format are: lower case, remove punctuation, get rid of stop words, unify tense and singular & plural.
 
-Seperate test set away from training+validation test, otherwise we would get a too optimistic result.
-
 ```bash
 $ ./tokenize_news.py
 ```
 
-### 3. Train a ConvNet to predict the stock price movement. 
+### 3. Train a Bayesian ConvNet to predict the stock price movement. 
 
 Type the following to train a set of robust Bayesian models.
 ```bash
 $ ./main.py -epochs 500 -static False
 ```
 
-Test the performance on the most recent news in two weeks.
-```bash
-$ ./main.py -eval True
->>> Testing    - loss: 67.6102  acc: 58.07%(41.8/72) 83.50%(3/3) 100.00%(0/0) 0.00%(0/0) 0.00%(0/0)
-```
-Note: the predictions are averaged (therefore some numbers, like 41.8, are rounded). From left to right, the predictions are more and more confident.
-
 ### 4. Prediction and analysis
 
+Let's show one example how the thinning models react to Baidu Lu Qi's resignation
 ```bash
 $ ./main.py -predict "Top executive behind Baidu's artificial intelligence drive steps aside"
->>> Sell
+>> Sell
 ```
+The prediction makes sence, let's find another one.
+
+```
+Eli Lilly and Co (LLY.N)
+FRI, JUN 1 2018
+UPDATE 2-Lilly gets U.S. nod for arthritis drug, sets price well below rivals
+* Drug priced at $25,000/year, 60 pct lower to AbbVie's Humira
+```
+
+```bash
+$ ./main.py -predict "UPDATE 2-Lilly gets U.S. nod for arthritis drug  sets price well below rivals"
+>> Sell
+```
+
+Lowering down drug prices looks helpful to gain market share in business, however, they didn't mention too much about the updates of technology, we are inclined to regard it as the virulent price competition, which does no help to the company earnings. Thus it is not a bad decision to sell Eli Lilly stocks.
+
+Next, let's see what the buy options look like:
+
+```
+Alphabet Inc (GOOG.O)
+WED, MAY 30 2018
+Google launches second app in China, woos top smartphone market
+* BEIJING Alphabet Inc's Google has launched a file managing tool in several Chinese app stores as it 
+* looks for fresh inroads into the world's biggest smartphone market, where most of the internet 
+* giant's top products remain banned.
+```
+
+```bash
+$ ./main.py -predict "Google launches second app in China  woos top smartphone market"
+>> Strong Buy
+```
+
+By now, you have basically understood how the models work, let's use backtesting to examine the performance on the news in the past two weeks.
+```bash
+$ ./main.py -eval True
+>> Testing    - loss: 0.6761  acc: 58.07%(41.8/72.0) 83.50%(3.3/3.9) 100.00%(0.0/0.0) 0.00%(0.0/0.0) 
+```
+Note: the predictions are averaged, which explains why we have float numbers. From left to right, the predictions become more and more confident. 58% is actually much higher than my expectation, I believe when tested on a longer time horizon, the performance gets worse. However, as long as the predictions are better than random guesses (50%), you will be rich (just kidding), because no matter how hard you try, you can't lose money betting on a favorable game (submartingale, Durrett).
+
 
 ### 5. Future work
 
@@ -110,7 +137,7 @@ From the [work](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1331573) by 
 
 As suggested by H Lee, we may consider to include features of earnings surprise due to its great value.
 
-You are welcome to send a better stopword list.
+You are welcome to build a better stopword list and share it.
 
 
 ## Issues
