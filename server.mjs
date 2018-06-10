@@ -18,7 +18,7 @@ app.set('view engine', 'pug')
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(bodyParser.json())
 
-app.use(express.static(path.resolve('./client/dist/')))
+app.use(express.static(path.resolve('./client/')))
 
 var env = process.env.NODE_ENV || 'development'
 app.locals.node_env = env

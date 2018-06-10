@@ -1,0 +1,20 @@
+[
+  {
+    "date": "20180519",
+    "ticker": "BIDU",
+    "company": "Baidu Inc",
+    "title": "Top executive behind Baidu's artificial intelligence drive stepping down ",
+    "isTopStory": true,
+    "predict": "&cudarrr;",
+    "correct": true
+  },
+  {
+    "date": "20180519",
+    "ticker": "BIDU",
+    "company": "Baidu Inc",
+    "title": "UPDATE 2-Top executive behind Baidu's artificial intelligence drive stepping down ",
+    "isTopStory": false,
+    "predict": "&#10548;",
+    "correct": false
+  }
+]
