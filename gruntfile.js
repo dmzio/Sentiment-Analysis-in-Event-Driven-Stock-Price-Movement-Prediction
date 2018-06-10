@@ -20,7 +20,7 @@ module.exports = function(grunt) {
             },
         },
 
-        browserify: {  // run task if watching file changes
+        browserify: {
             dist: {
                 // see: https://github.com/jmreidy/grunt-browserify/tree/master/examples
                 files: {
@@ -33,7 +33,7 @@ module.exports = function(grunt) {
             }
         },
 
-        sass: {  // run task if watching file changes
+        sass: {
             dist: {
                 options: {
                     style: 'expanded'
@@ -67,7 +67,7 @@ module.exports = function(grunt) {
         },
 
         concurrent: {
-            tasks: ['nodemon', 'watch'],  // tasks run on startup
+            tasks: ['nodemon', 'watch', 'sass', 'browserify:dist'],  // tasks run on startup
             options: {
                 logConcurrentOutput: true
             }
