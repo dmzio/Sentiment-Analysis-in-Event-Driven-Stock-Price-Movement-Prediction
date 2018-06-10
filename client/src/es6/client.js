@@ -1,8 +1,7 @@
 
-import {a} from './index';
+import {demo} from './index';
 import {urlPrefix, isEmpty, urlFor} from './helper';
 
-console.log(a);
 console.log(urlPrefix);
-console.log(isEmpty(a));
+console.log(isEmpty(urlPrefix));
 console.log(urlFor('/hello'));
