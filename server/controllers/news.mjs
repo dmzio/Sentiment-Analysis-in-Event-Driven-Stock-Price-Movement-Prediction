@@ -4,10 +4,9 @@ import path from 'path';
 
 
 export function fetchNews(req, res) {
-  console.log(req.body)
   let {since, end} = req.body;
   fetchNewsBetween(since, end).then(news => {
-    console.log(news)
+    // console.log(news)
     res.json(news);
   })
 }

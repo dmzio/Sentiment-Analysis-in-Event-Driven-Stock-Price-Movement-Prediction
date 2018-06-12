@@ -24,7 +24,7 @@ module.exports = function(grunt) {
             dist: {
                 // see: https://github.com/jmreidy/grunt-browserify/tree/master/examples
                 files: {
-                    'client/dist/js/client.js': 'client/src/es6/client.js'
+                    'client/dist/js/app.js': 'client/src/es6/app.js'
                 },
                 options: {
                     // see: https://stackoverflow.com/a/41100748
