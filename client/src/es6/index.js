@@ -1,4 +1,6 @@
 
+import Datepicker from 'vuejs-datepicker';
+
 // register the grid component
 Vue.component('demo-grid', {
   template: '#grid-template',
@@ -64,9 +66,17 @@ export const demo = new Vue({
     gridColumns: ['date', 'ticker', 'title', 'predict', 'correct'],
     gridData: []
   },
-  mounted: function() {
+  methods: {
+    updateSince(since) {
+      console.log('since', since)
+    },
+    updateEnd(end) {
+      console.log('end', end)
+    }
+  },
+  mounted() {
     var self = this;
-    this.$http.get('./test.json').then(function(res) {
+    this.$http.post('./fetch_news', {since: null, end: null}).then(res => {
       self.gridData = res.data;
     })
   }

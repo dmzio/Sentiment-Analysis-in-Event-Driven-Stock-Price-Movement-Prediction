@@ -40,6 +40,8 @@ block content
       div#demo.
         <form id="search">
           Filter: <input name="query" v-model="searchQuery">
+          Since: <datepicker @selected="updateSince"></datepicker>
+          End: <datepicker @selected="updateEnd"></datepicker>
         </form>
         <demo-grid
           :data="gridData"

@@ -1,11 +1,15 @@
 // get all controllers
 import {index} from './controllers/index';
+import {fetchNews} from './controllers/news';
 
 export default function(app) {
 
-	/*** Index */
+  /*** Index */
+  app.get('/', index);
 
-    // Add AMT.parseInfo for each GET request, not for ajax call
-	app.get('/', index);
+
+  /*** News */
+  app.post('/fetch_news', fetchNews)
 
 }
+
