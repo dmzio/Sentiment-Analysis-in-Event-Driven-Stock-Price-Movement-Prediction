@@ -31,7 +31,8 @@ if (env === 'development') {
 
 // set url_prefix when running on remote server 
 app.locals.url_for = function(url) {
-  var url_prefix = env === 'production' ? '/' + (''+port).slice(2) : '';
+  // var url_prefix = env === 'production' ? '/' + (''+port).slice(2) : '';
+  let url_prefix = ''
   return url_prefix + url;
 }
 

@@ -2,13 +2,13 @@
 function getUrlPrefix() {
     // console.log(window.location.pathname);
     // NOT localhost, get url prefix
-    if (window.location.host.indexOf('localhost:') < 0) {
-        var pathname = window.location.pathname;
-        var port = pathname.split('/')[1];
-        if ($.isNumeric(port)) {
-            return '/' + port;
-        }
-    }
+    // if (window.location.host.indexOf('localhost:') < 0) {
+    //     var pathname = window.location.pathname;
+    //     var port = pathname.split('/')[1];
+    //     if ($.isNumeric(port)) {
+    //         return '/' + port;
+    //     }
+    // }
     return '';
 }
 
