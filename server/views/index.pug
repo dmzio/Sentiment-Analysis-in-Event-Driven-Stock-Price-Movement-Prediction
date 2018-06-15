@@ -38,12 +38,13 @@ block content
 
       // demo root element
       div#app.
-        <form id="search">
+        <div>
           Filter: <input name="query" v-model="searchQuery">
           <br>
-          Since: <datepicker @selected="updateSince"></datepicker>
-          End: <datepicker @selected="updateEnd"></datepicker>
-        </form>
+          Since: <datepicker @selected="updateSince" format="yyyyMMdd"></datepicker>
+          End: <datepicker @selected="updateEnd" format="yyyyMMdd"></datepicker>
+          <button class="search" @click="fetch">Search</button>
+        </div>
         <news-grid
           :data="gridData"
           :columns="gridColumns"
