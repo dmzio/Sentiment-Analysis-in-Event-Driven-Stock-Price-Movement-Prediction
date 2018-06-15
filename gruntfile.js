@@ -5,9 +5,11 @@ module.exports = function(grunt) {
     grunt.initConfig({
 
         watch: {
-            livereload: {
-                options: { livereload: true },
-                // reload if client/dist/ and server/ changes, not reload on client/src/
+            livereloadClient: {
+                options: { livereload: true, debounceDelay: 1000 },
+                // reload if client/dist/, not reload on client/src/
+                // TODO: haven't find a way to reload some time after server/ changes
+                // i.e., only reload after server restarts completely
                 files: ['client/dist/**/*', 'server/**/*'],
             },
             es6: {

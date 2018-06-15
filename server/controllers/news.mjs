@@ -14,22 +14,25 @@ export function fetchNews(req, res) {
 }
 
 
-// by default, fetch news since last two weeks
+// by default, fetch news since last week
+// determine all the files between since and end
+// read each csv file
 function fetchNewsBetween(since, end) {
-  // determine all the files between since and end
-  // read each csv file
 
   // TODO: set a maximum range
   let from, to;
   if (since) {
     from = moment(since, 'YYYYMMDD')
-    to = end ? moment(end, 'YYYYMMDD') : from.clone().add(2, 'weeks')
+    to = end ? moment(end, 'YYYYMMDD') : from.clone().add(1, 'weeks')
   } else {
     to = end ? moment(end, 'YYYYMMDD') : moment()
-    from = to.clone().subtract(2, 'weeks')
+    from = to.clone().subtract(1, 'weeks')
   }
   let range = moment.range(from, to)
-  return Promise.all(Array.from(range.by('day')).map(date => {
+  if (range.diff('days') > 31) {
+    return Promise.resolve('The date range is too big')
+  }
+  return Promise.all(Array.from(range.reverseBy('day')).map(date => {
     let year = String(date.year())
     let str = date.format('YYYYMMDD')
     let filePath = path.resolve(path.join('./input/news', year, `news_${str}.csv`))
@@ -43,7 +46,6 @@ function fetchNewsBetween(since, end) {
     })
     return data
   })
-  // return readCSV(path.resolve('./input/news/2018/news_20180526.csv'));
 }
 
 function readCSV(filePath) {

@@ -1,55 +1,65 @@
 extends layout
 
 block content
-    main
-      // component template
-      script(type="text/x-template" id="grid-template").
-        <div>
-          <p>
-            Total: ${ filteredData.length }
-          </p>
-          <table>
-            <thead>
-              <tr>
-                <th v-for="key in columns"
-                  @click="sortBy(key)"
-                  :class="{ active: sortKey == key }">
-                  ${ key | capitalize }
-                  <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="entry in filteredData">
-                <td v-for="key in columns">
-                  <span v-if="key == 'ticker'" v-bind:title="entry['company']">
-                    ${ entry[key] }
-                  </span>
-                  <span v-else-if="key == 'predict'" v-html="entry[key]"></span>
-                  <span v-else>
-                    ${ entry[key] }
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+  nav
+    h2 Stock prediction
+  main
+    // component template
+    script(type="text/x-template" id="grid-template").
+      <div>
+        <p class="grid-total-row">
+          Total rows: ${ filteredData.length }
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th v-for="key in columns"
+                @click="sortBy(key)"
+                :class="{ active: sortKey == key }">
+                ${ key | capitalize }
+                <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody v-if="filteredData.length">
+            <tr v-for="entry in filteredData">
+              <td v-for="key in columns">
+                <span v-if="key == 'ticker'" v-bind:title="entry['company']">
+                  ${ entry[key] }
+                </span>
+                <span v-else-if="key == 'predict'" v-html="entry[key]"></span>
+                <span v-else>
+                  ${ entry[key] }
+                </span>
+              </td>
+            </tr>
+          </tbody>
+          <div v-else><em>No results available for this date range.</em></div>
+        </table>
+      </div>
 
-      // demo root element
-      div#app.
-        <div>
-          Filter: <input name="query" v-model="searchQuery">
-          <br>
-          Since: <datepicker @selected="updateSince" format="yyyyMMdd"></datepicker>
-          End: <datepicker @selected="updateEnd" format="yyyyMMdd"></datepicker>
+    // demo root element
+    div#app.
+      <div class="control-menu">
+        <div class="inline-item">
+          Since: <datepicker v-model="since" format="yyyyMMdd"></datepicker>
+        </div>
+        <div class="inline-item">
+          End: <datepicker v-model="end" format="yyyyMMdd"></datepicker>
+        </div>
+        <div class="inline-item">
           <button class="search" @click="fetch">Search</button>
         </div>
-        <news-grid
-          :data="gridData"
-          :columns="gridColumns"
-          :filter-key="searchQuery">
-        </news-grid>
+        <div class="inline-item filter-input">
+          Filter: <input name="query" v-model="searchQuery">
+        </div>
+      </div>
+      <news-grid
+        :data="gridData"
+        :columns="gridColumns"
+        :filter-key="searchQuery">
+      </news-grid>
 
 
 

@@ -5,9 +5,6 @@ import NewsGrid from './news-grid';
 
 import {urlPrefix, isEmpty, urlFor} from './helper';
 
-console.log(urlPrefix);
-console.log(isEmpty(urlPrefix));
-console.log(urlFor('/hello'));
 
 // bootstrap the app
 const app = new Vue({
@@ -22,18 +19,10 @@ const app = new Vue({
     // otherwise, the sortOrders in grid-component will have undefined keys
     gridColumns: ['date', 'ticker', 'title', 'predict', 'correct'],
     gridData: [],
-    since: null,
-    end: null
+    since: new Date((new Date()).getTime() - (60*60*24*7*1000)),  // one week ago
+    end: new Date()
   },
   methods: {
-    updateSince(since) {
-      console.log('since', since)
-      this.since = since;
-    },
-    updateEnd(end) {
-      console.log('end', end)
-      this.end = end;
-    },
     toDateString(date) {
       if (date) {
         let year = date.getFullYear()
@@ -47,7 +36,11 @@ const app = new Vue({
       let self = this;
       this.$http.post('./fetch_news',{since: this.toDateString(this.since), end: this.toDateString(this.end)})
       .then(res => {
-        self.gridData = res.data;
+        if (Array.isArray(res.data)) {
+          self.gridData = res.data;
+        } else {
+          alert(res.data)
+        }
       })
     }
   },
