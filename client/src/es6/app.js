@@ -17,9 +17,9 @@ const app = new Vue({
     searchQuery: '',
     // note that we have to define gridColumns here, not inside $http callback
     // otherwise, the sortOrders in grid-component will have undefined keys
-    gridColumns: ['date', 'ticker', 'title', 'predict', 'correct'],
+    gridColumns: ['date', 'company', 'title', 'predict', 'day-on-day'],
     gridData: [],
-    since: new Date((new Date()).getTime() - (60*60*24*7*1000)),  // one week ago
+    since: new Date((new Date()).getTime() - (60*60*24*3*1000)),  // one week ago
     end: new Date()
   },
   methods: {

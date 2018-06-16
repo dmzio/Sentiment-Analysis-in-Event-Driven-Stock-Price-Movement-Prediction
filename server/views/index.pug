@@ -2,7 +2,7 @@ extends layout
 
 block content
   nav
-    h2 Stock prediction
+    h2 Stock Prediction
   main
     // component template
     script(type="text/x-template" id="grid-template").
@@ -24,8 +24,8 @@ block content
           </thead>
           <tbody v-if="filteredData.length">
             <tr v-for="entry in filteredData">
-              <td v-for="key in columns">
-                <span v-if="key == 'ticker'" v-bind:title="entry['company']">
+              <td v-for="key in columns" v-bind:class="{'text-center': key != 'title'}">
+                <span v-if="key == 'company'" v-bind:title="entry['ticker']">
                   ${ entry[key] }
                 </span>
                 <span v-else-if="key == 'predict'" v-html="entry[key]"></span>
@@ -60,6 +60,13 @@ block content
         :columns="gridColumns"
         :filter-key="searchQuery">
       </news-grid>
+    div
+      p
+        strong Note:
+      ul
+        li The correct Predict is in <strong>bold</strong> font.
+        li Day-on-day: use the 
+
 
 
 

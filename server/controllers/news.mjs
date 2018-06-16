@@ -23,10 +23,10 @@ function fetchNewsBetween(since, end) {
   let from, to;
   if (since) {
     from = moment(since, 'YYYYMMDD')
-    to = end ? moment(end, 'YYYYMMDD') : from.clone().add(1, 'weeks')
+    to = end ? moment(end, 'YYYYMMDD') : from.clone().add(3, 'days')
   } else {
     to = end ? moment(end, 'YYYYMMDD') : moment()
-    from = to.clone().subtract(1, 'weeks')
+    from = to.clone().subtract(3, 'days')
   }
   let range = moment.range(from, to)
   if (range.diff('days') > 31) {
@@ -56,12 +56,13 @@ function readCSV(filePath) {
   })
   .fromFile(filePath)
   .then((jsonObj) => {
-    jsonObj.forEach((item) => {
+    return jsonObj.filter(item => {
       // TODO: replace with real correctness of prediction
       // TODO: filter by newsType if needed
-      item['correct'] = Math.random() > 0.5 ? true : false;
+      let sign = Math.random() > 0.5 ? '+' : '-'
+      item['day-on-day'] = sign + Math.random().toFixed(2) + '%';
+      return item['newsType'] === 'topStory'
     });
-    return jsonObj;
   })
   .catch(err => {
     // console.log(err)
