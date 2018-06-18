@@ -29,12 +29,12 @@ def train(X_train, y_train, X_valid, y_valid, X_test, y_test, model, args):
     batch = args.batch_size
 
     parameters = [parameter for parameter in model.parameters()]
-    for epoch in range(1, args.epochs+1):
+    for epoch in range(1, args.epochs + 1):
         corrects = 0
-        epsilon = args.lr * ((epoch * 1.0) ** (-0.333)) # optimal decay rate
-        for idx in range(int(X_train.shape[0]/batch) + 1):
-            feature = torch.LongTensor(X_train[(idx*batch):(idx*batch+batch),])
-            target = torch.LongTensor(y_train[(idx*batch):(idx*batch+batch)])
+        epsilon = args.lr * ((epoch * 1.0) ** (-0.333))  # optimal decay rate
+        for idx in range(int(X_train.shape[0] / batch) + 1):
+            feature = torch.LongTensor(X_train[(idx * batch):(idx * batch + batch), ])
+            target = torch.LongTensor(y_train[(idx * batch):(idx * batch + batch)])
             if args.cuda:
                 feature, target = feature.cuda(), target.cuda()
             logit = model(feature)
@@ -43,7 +43,7 @@ def train(X_train, y_train, X_valid, y_valid, X_test, y_test, model, args):
             loss.backward()
 
             for layer_no, param in enumerate(model.parameters()):
-                if args.static and layer_no == 0: # fixed embedding layer cannot update
+                if args.static and layer_no == 0:  # fixed embedding layer cannot update
                     continue
                 noise = torch.cuda.FloatTensor(param.data.size()).normal_() * np.sqrt(epsilon / args.t)
                 parameters[layer_no].data += (- epsilon / 2 * param.grad + noise)
@@ -51,8 +51,8 @@ def train(X_train, y_train, X_valid, y_valid, X_test, y_test, model, args):
             corrects += (torch.max(logit, 1)[1].view(target.size()).data == target.data).sum().item()
             accuracy = 100.0 * corrects / batch / (idx + 1)
             sys.stdout.write('\rEpoch[{}] Batch[{}] - loss: {:.4f}  acc: {:.2f}%({}/{}) tempreture: {}'.format(
-                             epoch, idx, loss.item(), accuracy, corrects, batch * (idx + 1), int(args.t)))
-            args.t = args.t + 1 # annealing
+                epoch, idx, loss.item(), accuracy, corrects, batch * (idx + 1), int(args.t)))
+            args.t = args.t + 1  # annealing
         if epoch % 5 != 0:
             continue
         save(model, args.save_dir, epoch)
@@ -64,12 +64,12 @@ def train(X_train, y_train, X_valid, y_valid, X_test, y_test, model, args):
 def eval(X, y, model, term, args):
     model.eval()
     corrects, avg_loss = 0, 0
-    correct_part, total_part = {0.1:0, 0.2:0, 0.3:0, 0.4:0}, {0.1:1e-16, 0.2:1e-16, 0.3:1e-16, 0.4:1e-16}
+    correct_part, total_part = {0.1: 0, 0.2: 0, 0.3: 0, 0.4: 0}, {0.1: 1e-16, 0.2: 1e-16, 0.3: 1e-16, 0.4: 1e-16}
     batch = args.batch_size
 
-    for idx in range(int(X.shape[0]/batch) + 1):
-        feature = torch.LongTensor(X[(idx*batch):(idx*batch+batch),])
-        target = torch.LongTensor(y[(idx*batch):(idx*batch+batch)])
+    for idx in range(int(X.shape[0] / batch) + 1):
+        feature = torch.LongTensor(X[(idx * batch):(idx * batch + batch), ])
+        target = torch.LongTensor(y[(idx * batch):(idx * batch + batch)])
         if args.cuda:
             feature, target = feature.cuda(), target.cuda()
 
@@ -88,23 +88,28 @@ def eval(X, y, model, term, args):
     size = y.shape[0]
     avg_loss /= size
     accuracy = 100.0 * corrects / size
-    print('         {} - loss: {:.4f}  acc: {:.2f}%({}/{}) {:.2f}%({}/{}) {:.2f}%({}/{}) {:.2f}%({}/{}) {:.2f}%({}/{}) \n'.format(term,
-          avg_loss, accuracy, corrects, size, 100.0 * correct_part[0.1] / total_part[0.1], correct_part[0.1], int(total_part[0.1]), 
-          100.0 * correct_part[0.2] / total_part[0.2], correct_part[0.2], int(total_part[0.2]), 100.0 * correct_part[0.3] / total_part[0.3], 
-          correct_part[0.3], int(total_part[0.3]), 100.0 * correct_part[0.4] / total_part[0.4], correct_part[0.4], int(total_part[0.4])))
+    print(
+        '         {} - loss: {:.4f}  acc: {:.2f}%({}/{}) {:.2f}%({}/{}) {:.2f}%({}/{}) {:.2f}%({}/{}) {:.2f}%({}/{}) \n'.format(
+            term,
+            avg_loss, accuracy, corrects, size, 100.0 * correct_part[0.1] / total_part[0.1], correct_part[0.1],
+            int(total_part[0.1]),
+            100.0 * correct_part[0.2] / total_part[0.2], correct_part[0.2], int(total_part[0.2]),
+            100.0 * correct_part[0.3] / total_part[0.3],
+            correct_part[0.3], int(total_part[0.3]), 100.0 * correct_part[0.4] / total_part[0.4], correct_part[0.4],
+            int(total_part[0.4])))
     return accuracy
 
+
 def bma_eval(X, y, mymodels, term, args):
-    
     corrects, avg_loss = 0, 0
-    correct_part, total_part = {0.1:0, 0.2:0, 0.3:0, 0.4:0}, {0.1:1e-16, 0.2:1e-16, 0.3:1e-16, 0.4:1e-16}
+    correct_part, total_part = {0.1: 0, 0.2: 0, 0.3: 0, 0.4: 0}, {0.1: 1e-16, 0.2: 1e-16, 0.3: 1e-16, 0.4: 1e-16}
     batch = args.batch_size
 
     for model in mymodels:
         model.eval()
-        for idx in range(int(X.shape[0]/batch) + 1):
-            feature = torch.LongTensor(X[(idx*batch):(idx*batch+batch),])
-            target = torch.LongTensor(y[(idx*batch):(idx*batch+batch)])
+        for idx in range(int(X.shape[0] / batch) + 1):
+            feature = torch.LongTensor(X[(idx * batch):(idx * batch + batch), ])
+            target = torch.LongTensor(y[(idx * batch):(idx * batch + batch)])
             if args.cuda:
                 feature, target = feature.cuda(), target.cuda()
 
@@ -115,18 +120,24 @@ def bma_eval(X, y, mymodels, term, args):
             for xnum in range(1, 5):
                 thres = round(0.1 * xnum, 1)
                 idx_thres = (predictor > 0.5 + thres) + (predictor < 0.5 - thres)
-                correct_part[thres] += (torch.max(logit, 1)[1][idx_thres] == target.data[idx_thres]).sum().item() / (len(mymodels) * 1.0)
+                correct_part[thres] += (torch.max(logit, 1)[1][idx_thres] == target.data[idx_thres]).sum().item() / (
+                            len(mymodels) * 1.0)
                 total_part[thres] += idx_thres.sum().item() / (len(mymodels) * 1.0)
             corrects += (torch.max(logit, 1)[1] == target.data).sum().item() / (len(mymodels) * 1.0)
 
     size = y.shape[0]
     avg_loss /= size
     accuracy = 100.0 * corrects / size
-    print('{} - loss: {:.4f}  acc: {:.2f}%({:.1f}/{:.1f}) {:.2f}%({:.1f}/{:.1f}) {:.2f}%({:.1f}/{:.1f}) {:.2f}%({:.1f}/{:.1f}) \n'.format(
-        term, avg_loss, accuracy, corrects, size, 100.0 * correct_part[0.1] / total_part[0.1], correct_part[0.1], total_part[0.1], 
-        100.0 * correct_part[0.2] / total_part[0.2], correct_part[0.2], total_part[0.2], 
-        100.0 * correct_part[0.3] / total_part[0.3], correct_part[0.3], total_part[0.3]))
+    print(
+        '{} - loss: {:.4f}  acc: {:.2f}%({:.1f}/{:.1f}) {:.2f}%({:.1f}/{:.1f}) {:.2f}%({:.1f}/{:.1f}) {:.2f}%({:.1f}/{:.1f}) \n'.format(
+            term, avg_loss, accuracy, corrects, size, 100.0 * correct_part[0.1] / total_part[0.1], correct_part[0.1],
+            total_part[0.1],
+                                                      100.0 * correct_part[0.2] / total_part[0.2], correct_part[0.2],
+            total_part[0.2],
+                                                      100.0 * correct_part[0.3] / total_part[0.3], correct_part[0.3],
+            total_part[0.3]))
     return accuracy
+
 
 def predictor_preprocess(cnn, args):
     # load trained thinning samples (Bayesian CNN models) from input/models/
@@ -143,23 +154,23 @@ def predictor_preprocess(cnn, args):
     with open(dir_path + '/input/stopWords') as file:
         for word in file:
             stopWords.add(word.strip())
-    return(mymodels, word2idx, stopWords)
+    return (mymodels, word2idx, stopWords)
 
 
 def predict(sentence, mymodels, word2idx, stopWords, args):
     tokens = tokenize_news(sentence, stopWords)
     tokens = [word2idx[t] if t in word2idx else word2idx['UNKNOWN'] for t in tokens]
-    if len(tokens) < 5 or tokens == [word2idx['UNKNOWN']] * len(tokens): # tokens cannot be too short or unknown
+    if len(tokens) < 5 or tokens == [word2idx['UNKNOWN']] * len(tokens):  # tokens cannot be too short or unknown
         signal = 'Unknown'
     else:
         signal = signals(raw_predict(sentence, mymodels, word2idx, stopWords, args))
-    return(signal)
+    return (signal)
 
 
 def raw_predict(sentence, mymodels, word2idx, stopWords, args):
     tokens = tokenize_news(sentence, stopWords)
     tokens = [word2idx[t] if t in word2idx else word2idx['UNKNOWN'] for t in tokens]
-    if len(tokens) < 5 or tokens == [word2idx['UNKNOWN']] * len(tokens): # tokens cannot be too short or unknown
+    if len(tokens) < 5 or tokens == [word2idx['UNKNOWN']] * len(tokens):  # tokens cannot be too short or unknown
         signal = 0.5
     else:
         feature = torch.LongTensor([tokens])
@@ -172,7 +183,7 @@ def raw_predict(sentence, mymodels, word2idx, stopWords, args):
             predictor = torch.exp(logit[:, 1]) / (torch.exp(logit[:, 0]) + torch.exp(logit[:, 1]))
             logits.append(predictor.item())
         signal = np.mean(logits)
-    return(signal)
+    return (signal)
 
 
 def daily_predict(cnn, args):
@@ -189,7 +200,7 @@ def daily_predict(cnn, args):
             else:
                 continue
 
-            #if newsType != 'topStory': # newsType: [topStory, normal]
+            # if newsType != 'topStory': # newsType: [topStory, normal]
             #    signal = 'Unknown'
             signal = predict(headline, mymodels, word2idx, stopWords, args)
             fout.write(','.join([ticker, name, day, headline, body, newsType, signal]) + '\n')
@@ -199,33 +210,35 @@ def daily_predict(cnn, args):
 def save(model, save_dir, steps):
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
-    save_path = '{}/model_{}.pt'.format(save_dir,steps)
+    save_path = '{}/model_{}.pt'.format(save_dir, steps)
     torch.save(model.state_dict(), save_path)
+
 
 def signals(digit):
     strong_signal = 0.3
     unknown_thres = 0.05
     if digit > 0.5 + strong_signal:
-        return('Strong Buy')
+        return ('Strong Buy')
     elif digit > 0.5 + unknown_thres:
-        return('Strong Buy')
+        return ('Strong Buy')
     elif digit > 0.5 - unknown_thres:
-        return('Unknown')
+        return ('Unknown')
     elif digit > 0.5 - strong_signal:
-        return('Sell')
+        return ('Sell')
     else:
-        return('Strong Sell')
+        return ('Strong Sell')
+
 
 def padding(sentencesVec, keepNum):
     shape = sentencesVec.shape[0]
     ownLen = sentencesVec.shape[1]
     if ownLen < keepNum:
-        return np.hstack((np.ones([shape, keepNum-ownLen]), sentencesVec)).flatten()
+        return np.hstack((np.ones([shape, keepNum - ownLen]), sentencesVec)).flatten()
     else:
         return sentencesVec[:, -keepNum:].flatten()
 
 
-def dateGenerator(numdays): # generate N days until now, eg [20151231, 20151230]
+def dateGenerator(numdays):  # generate N days until now, eg [20151231, 20151230]
     base = datetime.datetime.today()
     date_list = [base - datetime.timedelta(days=x) for x in range(0, numdays)]
     for i in range(len(date_list)):
@@ -239,6 +252,7 @@ def generate_past_n_days(numdays):
     date_range = [base - datetime.timedelta(days=x) for x in range(0, numdays)]
     return [x.strftime("%Y%m%d") for x in date_range]
 
+
 def unify_word(word):  # went -> go, apples -> apple, BIG -> big
     """unify verb tense and noun singular"""
     ADJ, ADJ_SAT, ADV, NOUN, VERB = 'a', 's', 'r', 'n', 'v'
@@ -249,12 +263,14 @@ def unify_word(word):  # went -> go, apples -> apple, BIG -> big
             pass
     return word.lower()
 
+
 def digit_filter(word):
     check = re.match(r'\d*\.?\d*', word).group()
     if check == "":
         return word
     else:
         return ""
+
 
 def unify_word_meaning(word):
     if word in ["bigger-than-expected", "higher-than-expected", "better-than-expected", "stronger-than-expected"]:
@@ -266,8 +282,9 @@ def unify_word_meaning(word):
     else:
         return word
 
+
 def get_soup_with_repeat(url, repeat_times=3, verbose=True):
-    for i in range(repeat_times): # repeat in case of http failure
+    for i in range(repeat_times):  # repeat in case of http failure
         try:
             time.sleep(np.random.poisson(3))
             response = urlopen(url)
@@ -280,14 +297,15 @@ def get_soup_with_repeat(url, repeat_times=3, verbose=True):
                 print('retry...')
             continue
 
+
 def tokenize_news(headline, stopWords):
-    tokens = nltk.word_tokenize(headline) #+ nltk.word_tokenize(body)
+    tokens = nltk.word_tokenize(headline)  # + nltk.word_tokenize(body)
     tokens = list(map(unify_word, tokens))
-    tokens = list(map(unify_word, tokens)) # some words fail filtering in the 1st time
-    tokens = list(map(digit_filter, tokens)) 
+    tokens = list(map(unify_word, tokens))  # some words fail filtering in the 1st time
+    tokens = list(map(digit_filter, tokens))
     tokens = list(map(unify_word_meaning, tokens))
     tokens = [t for t in tokens if t not in stopWords and t != ""]
-    return(tokens)
+    return (tokens)
 
 
 def value2int(y, clusters=2):
@@ -296,6 +314,7 @@ def value2int(y, clusters=2):
     for i in range(1, clusters):
         label[y > np.percentile(y, 100 * i / clusters)] = i
     return label
+
 
 def value2int_simple(y):
     label = np.copy(y)
