@@ -13,6 +13,7 @@ import numpy as np
 import nltk
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.stem.porter import PorterStemmer
+from bs4 import BeautifulSoup
 
 import json
 import torch
