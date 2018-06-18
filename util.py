@@ -20,6 +20,8 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 def train(X_train, y_train, X_valid, y_valid, X_test, y_test, model, args):
     model.train()
@@ -129,24 +131,35 @@ def predictor_preprocess(cnn, args):
     # load trained thinning samples (Bayesian CNN models) from input/models/
     mymodels = []
     for each_model in os.listdir(args.save_dir):
-        print(args.save_dir + each_model)
-        cnn.load_state_dict(torch.load(args.save_dir + each_model))
+        # print(args.save_dir + each_model)
+        cnn.load_state_dict(torch.load(args.save_dir + each_model, map_location='cpu'))
         mymodels.append(copy.deepcopy(cnn))
 
-    with open('./input/word2idx', 'r') as file:
+    with open(dir_path + '/input/word2idx', 'r') as file:
         word2idx = json.load(file)
 
     stopWords = set()
-    with open('./input/stopWords') as file:
+    with open(dir_path + '/input/stopWords') as file:
         for word in file:
             stopWords.add(word.strip())
     return(mymodels, word2idx, stopWords)
+
 
 def predict(sentence, mymodels, word2idx, stopWords, args):
     tokens = tokenize_news(sentence, stopWords)
     tokens = [word2idx[t] if t in word2idx else word2idx['UNKNOWN'] for t in tokens]
     if len(tokens) < 5 or tokens == [word2idx['UNKNOWN']] * len(tokens): # tokens cannot be too short or unknown
         signal = 'Unknown'
+    else:
+        signal = signals(raw_predict(sentence, mymodels, word2idx, stopWords, args))
+    return(signal)
+
+
+def raw_predict(sentence, mymodels, word2idx, stopWords, args):
+    tokens = tokenize_news(sentence, stopWords)
+    tokens = [word2idx[t] if t in word2idx else word2idx['UNKNOWN'] for t in tokens]
+    if len(tokens) < 5 or tokens == [word2idx['UNKNOWN']] * len(tokens): # tokens cannot be too short or unknown
+        signal = 0.5
     else:
         feature = torch.LongTensor([tokens])
         logits = []
@@ -157,13 +170,13 @@ def predict(sentence, mymodels, word2idx, stopWords, args):
             logit = model(feature)
             predictor = torch.exp(logit[:, 1]) / (torch.exp(logit[:, 0]) + torch.exp(logit[:, 1]))
             logits.append(predictor.item())
-        signal = signals(np.mean(logits))
+        signal = np.mean(logits)
     return(signal)
 
 
 def daily_predict(cnn, args):
     mymodels, word2idx, stopWords = predictor_preprocess(cnn, args)
-    output = './input/news/' + args.date[:4] + '/news_' + args.date + '.csv'
+    output = dir_path + '/input/news/' + args.date[:4] + '/news_' + args.date + '.csv'
     fout = open(output + '_bak', 'w')
     with open(output) as f:
         for num, line in enumerate(f):

@@ -10,6 +10,8 @@ import numpy as np
 import util
 import json
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 # credit to: https://github.com/Shawn1993/cnn-text-classification-pytorch/blob/master/main.py
 
 parser = argparse.ArgumentParser(description='CNN-based Financial News Classifier')
@@ -19,7 +21,7 @@ parser.add_argument('-t', type=float, default=1, help='SGLD tempreture [default:
 
 parser.add_argument('-epochs', type=int, default=50, help='number of epochs for train [default: 50]')
 parser.add_argument('-batch-size', type=int, default=64, help='batch size for training [default: 64]')
-parser.add_argument('-save_dir', type=str, default='./input/models/', help='save thinning models')
+parser.add_argument('-save_dir', type=str, default=dir_path + '/input/models/', help='save thinning models')
 # model
 parser.add_argument('-dropout', type=float, default=0.5, help='the probability for dropout [default: 0.5]')
 parser.add_argument('-embed-dim', type=int, default=128, help='number of embedding dimension [default: 128]')
@@ -35,13 +37,16 @@ parser.add_argument('-eval', type=bool, default=False, help='evaluate testing se
 parser.add_argument('-vocabs', type=int, default=30000, help='total number of vocabularies [default: 30000]')
 parser.add_argument('-words', type=int, default=20, help='max number of words in a sentence [default: 20]')
 parser.add_argument('-date', type=str, default='', help='date to be tested')
+parser.add_argument('-train', type=bool, default=False, help='run training or no')
 
-
-args = parser.parse_args()
+if __name__ == '__main__':
+    args = parser.parse_args()
+else:
+    args = parser.parse_args([])
 
 # load tokenized features
-data = np.genfromtxt('./input/featureMatrix_train')
-test = np.genfromtxt('./input/featureMatrix_test')
+data = np.genfromtxt(dir_path + '/input/featureMatrix_train')
+test = np.genfromtxt(dir_path + '/input/featureMatrix_test')
 np.random.shuffle(data)
 X, y = data[:, :-1], data[:, -1]
 label = util.value2int_simple(y).astype("int") # using direction to label
@@ -83,7 +88,7 @@ if args.predict is not None:
 elif args.eval is not False:
     mymodels, word2idx, stopWords = util.predictor_preprocess(cnn, args)
     util.bma_eval(X_test, y_test, mymodels, 'Testing   ', args)
-else:
+elif args.train:
     print()
     try:
         util.train(X_train, y_train, X_valid, y_valid, X_test, y_test, cnn, args)
