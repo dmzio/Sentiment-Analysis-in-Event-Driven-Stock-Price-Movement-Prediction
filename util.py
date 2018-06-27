@@ -45,6 +45,7 @@ def train(X_train, y_train, X_valid, y_valid, X_test, y_test, model, args):
             for layer_no, param in enumerate(model.parameters()):
                 if args.static and layer_no == 0:  # fixed embedding layer cannot update
                     continue
+                # by default I assume you train the models using GPU
                 noise = torch.cuda.FloatTensor(param.data.size()).normal_() * np.sqrt(epsilon / args.t)
                 parameters[layer_no].data += (- epsilon / 2 * param.grad + noise)
 
@@ -142,10 +143,15 @@ def bma_eval(X, y, mymodels, term, args):
 def predictor_preprocess(cnn, args):
     # load trained thinning samples (Bayesian CNN models) from input/models/
     mymodels = []
-    for each_model in os.listdir(args.save_dir):
-        # print(args.save_dir + each_model)
-        cnn.load_state_dict(torch.load(args.save_dir + each_model, map_location='cpu'))
+    for num, each_model in enumerate(os.listdir(args.save_dir)):
+        print(args.save_dir + each_model)
+        if args.cuda:
+            cnn.load_state_dict(torch.load(args.save_dir + each_model))
+        else:
+            cnn.load_state_dict(torch.load(args.save_dir + each_model, map_location=lambda storage, loc: storage))
         mymodels.append(copy.deepcopy(cnn))
+        if num > 30: # in case memory overloads
+            break
 
     with open(dir_path + '/input/word2idx', 'r') as file:
         word2idx = json.load(file)
@@ -204,6 +210,9 @@ def daily_predict(cnn, args):
             #    signal = 'Unknown'
             signal = predict(headline, mymodels, word2idx, stopWords, args)
             fout.write(','.join([ticker, name, day, headline, body, newsType, signal]) + '\n')
+    fout.close()
+    print('change file name')
+    print('mv ' + output + '_bak ' + output)
     os.system('mv ' + output + '_bak ' + output)
 
 
