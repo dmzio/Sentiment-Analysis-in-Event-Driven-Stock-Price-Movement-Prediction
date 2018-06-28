@@ -46,7 +46,11 @@ def train(X_train, y_train, X_valid, y_valid, X_test, y_test, model, args):
                 if args.static and layer_no == 0:  # fixed embedding layer cannot update
                     continue
                 # by default I assume you train the models using GPU
-                noise = torch.cuda.FloatTensor(param.data.size()).normal_() * np.sqrt(epsilon / args.t)
+                if args.cuda:
+                    float_cls = torch.cuda.FloatTensor
+                else:
+                    float_cls = torch.FloatTensor
+                noise = float_cls(param.data.size()).normal_() * np.sqrt(epsilon / args.t)
                 parameters[layer_no].data += (- epsilon / 2 * param.grad + noise)
 
             corrects += (torch.max(logit, 1)[1].view(target.size()).data == target.data).sum().item()
@@ -307,7 +311,14 @@ def get_soup_with_repeat(url, repeat_times=3, verbose=True):
             continue
 
 
+def clean_reuters_specific(headline):
+    headline = re.sub('UPDATE \d-', '', headline)
+    headline = re.sub('BRIEF-', '', headline)
+    return headline
+
+
 def tokenize_news(headline, stopWords):
+    headline = clean_reuters_specific(headline)
     tokens = nltk.word_tokenize(headline)  # + nltk.word_tokenize(body)
     tokens = list(map(unify_word, tokens))
     tokens = list(map(unify_word, tokens))  # some words fail filtering in the 1st time
