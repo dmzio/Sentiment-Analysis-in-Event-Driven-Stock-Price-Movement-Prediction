@@ -9,7 +9,6 @@ import nltk
 
 import util
 
-
 """ Use pretrained word vector to generate our target features
 Required input data:
 ./input/stopWords
@@ -21,7 +20,9 @@ input/featureMatrix_train
 input/featureMatrix_test 
 input/word2idx"""
 
+
 # credit: https://github.com/lazyprogrammer/machine_learning_examples/tree/master/nlp_class2
+
 
 def tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, sen_len, term_type, n_vocab, mtype):
     # load price data
@@ -29,7 +30,7 @@ def tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, sen_l
         print("Loading price info ...")
         priceDt = json.load(file)[term_type]
 
-    testDates = util.dateGenerator(7) # the most recent days are used for testing
+    testDates = util.dateGenerator(60)  # the most recent days are used for testing
     os.system('rm ' + output + mtype)
 
     # load stop words
@@ -51,20 +52,20 @@ def tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, sen_l
             if len(line) != 6:
                 continue
             ticker, name, day, headline, body, newsType = line
-            
-            if newsType != 'topStory': # newsType: [topStory, normal]
-                continue # skip normal news
-            
-            if ticker not in priceDt: 
-                continue # skip if no corresponding company found
-            if day not in priceDt[ticker]: 
-                continue # skip if no corresponding date found
 
-            if num % 10000 == 0: 
+            if newsType != 'topStory':  # newsType: [topStory, normal]
+                continue  # skip normal news
+
+            if ticker not in priceDt:
+                continue  # skip if no corresponding company found
+            if day not in priceDt[ticker]:
+                continue  # skip if no corresponding date found
+
+            if num % 10000 == 0:
                 print("%sing samples %d" % (mtype, num))
-            if mtype == "test" and day not in testDates: 
+            if mtype == "test" and day not in testDates:
                 continue
-            if mtype == "train" and day in testDates: 
+            if mtype == "train" and day in testDates:
                 continue
 
             tokens = util.tokenize_news(headline, stopWords)
@@ -93,11 +94,11 @@ def tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, sen_l
         new_idx += 1
 
     # let 'unknown' be the last token
-    word2idx_small['UNKNOWN'] = new_idx 
+    word2idx_small['UNKNOWN'] = new_idx
     unknown = new_idx
 
     # map old idx to new idx
-    features = [] # shorter sentence idx
+    features = []  # shorter sentence idx
     for num, sentence in enumerate(sentences):
         if len(sentence) > 1:
             new_sentence = [idx_new_idx_map[idx] if idx in idx_new_idx_map else unknown for idx in sentence]
@@ -112,19 +113,18 @@ def tokenize(news_file, price_file, stopWords_file, output, output_wd2idx, sen_l
     features = np.matrix(features)
     print(features.shape)
 
-
     with open(output_wd2idx, 'w') as fp:
         json.dump(word2idx_small, fp)
 
     with open(output + mtype, 'a+') as file:
         np.savetxt(file, features, fmt="%s")
 
+
 def main():
     news_file = "./input/news_reuters.csv"
     stopWords_file = "./input/stopWords"
     price_file = "./input/stockReturns.json"
 
-    
     output = './input/featureMatrix_'
     output_wd2idx = "./input/word2idx"
 
